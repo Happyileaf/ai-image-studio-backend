@@ -1,0 +1,84 @@
+# ====== 本地开发配置（localhost 直连 infra 容器）======
+# 使用前请先通过 ai-image-studio-infra 的 docker-compose.dev.yml 启动依赖服务
+
+spring:
+  # ====== MySQL 8.4 ======
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:style_transfer}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:ChangeMe_MySQL_Root_2026!}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 60000
+
+  # ====== Flyway 数据库迁移 ======
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    encoding: UTF-8
+
+  # ====== Redis 8.x + Redisson ======
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:ChangeMe_Redis_Pwd_2026!}
+      database: 0
+      timeout: 5s
+
+  # ====== RabbitMQ 4.3 ======
+  rabbitmq:
+    host: ${MQ_HOST:localhost}
+    port: ${MQ_PORT:5672}
+    username: ${MQ_USER:admin}
+    password: ${MQ_PASSWORD:ChangeMe_MQ_Pwd_2026!}
+    virtual-host: /
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual   # 手动 ACK（任务执行成功才确认）
+        prefetch: 5
+        retry:
+          enabled: true
+          max-attempts: 3
+
+# ====== MinIO 对象存储 ======
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_AK:minioadmin}
+  secret-key: ${MINIO_SK:ChangeMe_MinIO_SK_2026!}
+  buckets:
+    source-temp: images-source-temp
+    result: images-result
+    style: styles-cover
+
+# ====== 第三方 AI 模型 ======
+ai:
+  provider: ${AI_PROVIDER:stub}    # stub: 本地桩实现（不调真实 API，用于开发骨架调试）
+  stability:
+    api-key: ${AI_API_KEY:}
+    base-url: ${AI_BASE_URL:https://api.stability.ai}
+    timeout: 60s
+
+# ====== Resend 邮件服务 ======
+resend:
+  api-key: ${RESEND_API_KEY:}
+  from-email: ${RESEND_FROM_EMAIL:noreply@example.com}
+  from-name: ${RESEND_FROM_NAME:AI Style Transfer}
+
+# ====== JWT 配置 ======
+jwt:
+  secret: ${JWT_SECRET:PleaseChangeThisJwtSecretToARandomStringAtLeast64BytesLongxxxxxxxxxxxxxxxxxxxxxxxxxx}
+  access-token-ttl: 2h
+  refresh-token-ttl: 7d
+
+# ====== 日志 ======
+logging:
+  level:
+    com.styletransfer.studio: DEBUG
+    org.springframework.amqp: INFO
+    org.redisson: INFO

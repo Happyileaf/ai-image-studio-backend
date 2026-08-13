@@ -1,0 +1,76 @@
+# ====== 公共配置（所有环境共享）======
+spring:
+  application:
+    name: style-transfer-studio
+
+  profiles:
+    # 默认使用 dev 本地开发配置；生产通过 -Dspring.profiles.active=prod 或环境变量覆盖
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # ====== Web MVC 配置 ======
+  mvc:
+    # Jackson 3 日期默认 ISO-8601（Boot 4 默认）
+    format:
+      date-time: iso
+
+  # ====== Servlet / 文件上传 ======
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+
+  # ====== JSON 序列化（Jackson 3：tools.jackson.*）======
+  jackson:
+    time-zone: GMT+8
+    # FAIL_ON_UNKNOWN_PROPERTIES 默认关闭（Boot 4）
+
+  # ====== Actuator 端点 ======
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ====== 接口文档：SpringDoc / Swagger UI ======
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: default
+      paths-to-match: /**
+
+# ====== 业务自定义配置（默认值，环境变量可覆盖）======
+app:
+  quota:
+    # 新用户默认额度（张）
+    default: ${APP_QUOTA_DEFAULT:20}
+  upload:
+    # 单张图最大值（Spring multipart 已有 10MB 限制，这里用于提示信息）
+    max-size: ${APP_UPLOAD_MAX_SIZE:10MB}
+    max-images-per-task: ${APP_MAX_IMAGES_PER_TASK:9}
+    allowed-types: jpg,png,webp
+  cleanup:
+    # 原图兜底清理阈值：超过该时间的临时原图会被定时任务强制清理
+    original-retention: ${APP_ORIGINAL_RETENTION:2h}
+    # 孤立原图清理阈值：上传后未创建任务超过该时间的原图删除
+    orphan-retention: ${APP_ORPHAN_RETENTION:24h}
+  task:
+    max-retry: ${APP_TASK_MAX_RETRY:2}
+    ai-timeout: ${APP_AI_TIMEOUT:60s}
+  history:
+    # 结果图默认保留天数（默认 7 天，与 PRD 一致；可在后台系统配置中调整）
+    result-image-retention-days: ${RESULT_IMAGE_RETENTION_DAYS:7}
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %X{traceId:-} - %msg%n"
+  level:
+    root: INFO
+    com.styletransfer.studio: DEBUG
