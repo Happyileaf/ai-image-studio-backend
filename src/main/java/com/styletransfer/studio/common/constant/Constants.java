@@ -12,8 +12,11 @@ public final class Constants {
 
     // ===== Redis Key 前缀 =====
     public static final String REDIS_KEY_EMAIL_CODE = "email_code:%s:%s";       // email_code:{email}:{purpose}
+    public static final String REDIS_KEY_EMAIL_CODE_RATE = "email_code:rate:%s";          // email_code:rate:{email}（60s 限频）
+    public static final String REDIS_KEY_EMAIL_CODE_DAILY = "email_code:daily:%s:%s";     // email_code:daily:{email}:{date}
     public static final String REDIS_KEY_QUOTA = "quota:%d";                      // quota:{userId}
-    public static final String REDIS_KEY_TOKEN_BLACKLIST = "token_blacklist:%s";  // token_blacklist:{jti}
+    public static final String REDIS_KEY_TOKEN_BLACKLIST = "token_blacklist:%s";  // token_blacklist:{token}
+    public static final String REDIS_KEY_RATE_LIMIT = "rate_limit:%s:%s";         // rate_limit:{key}:{userId或ip}
     public static final String REDIS_KEY_LOCK_USER_TASK = "user:task:lock:%d";    // user:task:lock:{userId}
 
     // ===== MinIO Bucket 名 =====

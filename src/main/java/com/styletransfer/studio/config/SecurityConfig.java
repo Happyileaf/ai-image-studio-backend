@@ -1,21 +1,38 @@
 package com.styletransfer.studio.config;
 
+import com.styletransfer.studio.security.JwtAuthenticationFilter;
+import com.styletransfer.studio.security.RestAccessDeniedHandler;
+import com.styletransfer.studio.security.RestAuthenticationEntryPoint;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 /**
- * Spring Security 配置（骨架）
+ * Spring Security 配置
  *
- * <p>JWT 无状态鉴权：SessionCreationPolicy.STATELESS</p>
- * <p>完整的 JwtAuthenticationFilter 将在 M1（用户系统）中接入，这里仅放行所有接口确保骨架可启动。</p>
+ * <p>JWT 无状态鉴权：SessionCreationPolicy.STATELESS + JwtAuthenticationFilter。
+ * 放行鉴权 / 文档 / 健康检查接口；/api/v1/admin/** 需 ADMIN 角色；其余需登录。</p>
  */
 @Configuration
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
 
     /**
      * 密码加密器：BCrypt（cost=10）
@@ -25,23 +42,53 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(10);
     }
 
-    /**
-     * 初始化安全过滤链（MVP 骨架阶段：仅启用安全框架默认配置，不对接口进行拦截）。
-     * M1 用户系统实现后，这里会添加 JwtAuthenticationFilter、路由权限控制等。
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // ===== MVP 骨架启动：临时禁用 CSRF + 放行所有请求 =====
-        // TODO(M1): 替换为真实的鉴权过滤链：
-        //   1. 添加 JwtAuthenticationFilter 到 UsernamePasswordAuthenticationFilter 之前
-        //   2. 放行 /auth/**（登录、注册、发验证码）与 Swagger、Actuator health
-        //   3. /api/** 其余需要登录
-        //   4. /admin/** 需要 @PreAuthorize("hasRole('ADMIN')") 方法级控制
         http
             .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                        "/api/v1/auth/send-code",
+                        "/api/v1/auth/register",
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/refresh",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/actuator/**",
+                        "/health",
+                        "/",
+                        "/error"
+                ).permitAll()
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .exceptionHandling(eh -> eh
+                .authenticationEntryPoint(restAuthenticationEntryPoint)
+                .accessDeniedHandler(restAccessDeniedHandler)
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * CORS 配置源（与 WebMvcConfig 一致，供 Spring Security 的 CorsFilter 使用）
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("http://localhost:*", "https://*.example.com"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Content-Disposition"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }

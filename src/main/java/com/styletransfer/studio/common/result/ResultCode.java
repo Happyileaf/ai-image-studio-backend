@@ -30,6 +30,8 @@ public enum ResultCode {
     NOT_LOGIN(1003, "未登录或登录已过期"),
     NO_PERMISSION(1004, "无权限访问"),
     RATE_LIMITED(1005, "请求过于频繁，请稍后再试"),
+    TOKEN_INVALID(1006, "登录凭证无效"),
+    REFRESH_TOKEN_INVALID(1007, "刷新凭证无效或已过期"),
 
     // ===== 2xxx 用户模块 =====
     EMAIL_REGISTERED(2001, "邮箱已被注册"),
@@ -44,6 +46,7 @@ public enum ResultCode {
     IMAGE_TOO_LARGE(3002, "图片大小超限"),
     IMAGE_ILLEGAL(3003, "图片非法（文件类型不匹配）"),
     IMAGE_RESOLUTION_TOO_LARGE(3004, "图片分辨率超限（≤4096×4096）"),
+    IMAGE_NOT_FOUND(3005, "图片不存在"),
 
     // ===== 4xxx 风格模块 =====
     STYLE_NOT_FOUND(4001, "风格不存在"),

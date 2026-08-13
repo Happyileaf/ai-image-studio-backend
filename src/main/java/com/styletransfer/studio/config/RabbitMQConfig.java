@@ -5,6 +5,8 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -63,5 +65,18 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(taskCreateDlq())
                 .to(styleTransferExchange())
                 .with(ROUTING_KEY_TASK_CREATE_DLQ);
+    }
+
+    /**
+     * 使用 Jackson2JsonMessageConverter 替代默认的 SimpleMessageConverter，
+     * 以 JSON 文本格式传输 MQ 消息（而非 Java 序列化），彻底规避 Spring AMQP
+     * 反序列化信任列表（default trusted packages）拦截自定义类的问题。
+     *
+     * <p>Spring Boot 自动将此 Bean 注入 RabbitTemplate（生产者）
+     * 与 SimpleRabbitListenerContainerFactory（@RabbitListener 消费者），无需额外配置。</p>
+     */
+    @Bean
+    public MessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter();
     }
 }

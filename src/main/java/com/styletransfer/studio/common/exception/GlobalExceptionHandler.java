@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -82,6 +83,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public Result<Void> handleAccessDenied(AccessDeniedException e) {
         return Result.fail(ResultCode.NO_PERMISSION);
+    }
+
+    // ===== Spring Security 未认证（在控制器/服务层抛出时兜底）=====
+    @ExceptionHandler(AuthenticationException.class)
+    public Result<Void> handleAuthentication(AuthenticationException e) {
+        return Result.fail(ResultCode.NOT_LOGIN);
     }
 
     // ===== 兜底 =====
